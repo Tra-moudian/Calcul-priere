@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calcul des phases et élévation de la Lune</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        header {
+            position: sticky;
+            top: 0;
+            background-color: #333;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            z-index: 1000;
+        }
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-container h1 {
+            margin: 0;
+            flex-grow: 1;
+            text-align: center;
+        }
+        #current-time {
+            font-size: 40px;
+            font-weight: bold;
+            color: yellow;
+        }
+        main {
+            padding: 20px;
+            height: 500px; /* Limite la hauteur pour activer le défilement */
+            overflow-y: auto; /* Permet le défilement vertical */
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #ccc;
+        }
+        th {
+            background-color: #444;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 999; /* Assure que l'en-tête reste au-dessus du reste du contenu */
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr td.bold {
+            font-weight: bold;
+            color: blue;    
+        }
+        input[type="date"] {
+            padding: 5px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #444;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        button:hover {
+            background-color: #555;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <h1>Phases et élévation de la Lune</h1>
+            <div id="current-time"></div>
+        </div>
+        <p>Saisissez une date et cliquez sur "Calculer" pour voir les données.</p>
+        <input type="date" id="dateInput" value="2024-11-15" />
+        <button onclick="calculateMoonPhases()">Calculer</button>
+    </header>
+    <main>
+        <table id="resultsTable">
+            <thead>
+                <tr>
+                    <th>Heure</th>
+                    <th>Pourcentage de visibilité</th>
+                    <th>Élévation (°)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Les résultats seront insérés ici -->
+            </tbody>
+        </table>
+    </main>
+
+    <script>
+        // Fonction pour afficher l'heure actuelle
+        function updateTime() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            const currentTimeString = `${hours}:${minutes}:${seconds}`;
+            document.getElementById('current-time').textContent = currentTimeString;
+        }
+
+        // Mise à jour de l'heure toutes les secondes
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // Fonction pour calculer les phases et élévations de la Lune
+        function calculateMoonPhases() {
+            const dateInput = document.getElementById("dateInput").value;
+            const date = new Date(dateInput);
+            const tbody = document.querySelector("#resultsTable tbody");
+            tbody.innerHTML = ""; // Réinitialiser les résultats
+
+            // Obtenir la longitude et la latitude de Paris
+            const latitude = 48.8566;
+            const longitude = 2.3522;
+
+            // Obtenir le jour julien pour une date donnée
+            function getJulianDate(date) {
+                return date / 86400000.0 + 2440587.5; // Conversion en jours juliens
+            }
+
+            const julianDate = getJulianDate(date);
+
+            for (let hour = 0; hour < 24; hour++) {
+                const jdHour = julianDate + hour / 24;
+                const phase = getMoonPhase(jdHour); // Phase de la Lune
+                const visibility = Math.round(phase * 100 * 10) / 10; // Pourcentage de visibilité
+
+                // Calculer l'élévation de la Lune (simplifié pour Paris)
+                const elevation = calculateMoonElevation(jdHour, latitude, longitude);
+                const isAboveHorizon = elevation > 0;
+
+                const row = `<tr>
+                    <td class="${isAboveHorizon ? "bold" : ""}">${hour}:00</td>
+                    <td class="${isAboveHorizon ? "bold" : ""}">${visibility}%</td>
+                    <td class="${isAboveHorizon ? "bold" : ""}">${elevation.toFixed(1)}°</td>
+                </tr>`;
+                tbody.innerHTML += row;
+            }
+        }
+
+        // Fonction pour calculer la phase de la Lune
+        function getMoonPhase(julianDate) {
+            const daysSinceNewMoon = julianDate - 2451550.1; // Référence au 6 janvier 2000
+            const synodicMonth = 29.53058867; // Durée moyenne d'un cycle lunaire (en jours)
+            const phase = (daysSinceNewMoon % synodicMonth) / synodicMonth;
+            return phase <= 0.5 ? phase * 2 : (1 - phase) * 2; // Visibilité (0-1)
+        }
+
+        // Fonction simplifiée pour calculer l'élévation de la Lune
+        function calculateMoonElevation(julianDate, latitude, longitude) {
+            // Approximations pour la déclinaison et l'angle horaire de la Lune
+            const T = (julianDate - 2451545.0) / 36525.0; // Siècle julien depuis J2000.0
+            const declination = 5 * Math.sin(2 * Math.PI * T); // Déclinaison simplifiée en degrés
+            const hourAngle = ((julianDate - Math.floor(julianDate) - 0.5) * 360 + longitude) % 360; // Angle horaire
+            const elevation = Math.asin(
+                Math.sin(latitude * Math.PI / 180) * Math.sin(declination * Math.PI / 180) +
+                Math.cos(latitude * Math.PI / 180) * Math.cos(declination * Math.PI / 180) * Math.cos(hourAngle * Math.PI / 180)
+            );
+            return elevation * (180 / Math.PI); // Conversion en degrés
+        }
+    </script>
+</body>
+</html>
