@@ -37,8 +37,8 @@
         }
         main {
             padding: 20px;
-            height: 500px; /* Limite la hauteur pour activer le défilement */
-            overflow-y: auto; /* Permet le défilement vertical */
+            height: 500px;
+            overflow-y: auto;
         }
         table {
             width: 100%;
@@ -55,7 +55,7 @@
             color: white;
             position: sticky;
             top: 0;
-            z-index: 999; /* Assure que l'en-tête reste au-dessus du reste du contenu */
+            z-index: 999;
         }
         tr:nth-child(even) {
             background-color: #f9f9f9;
@@ -89,7 +89,7 @@
             <div id="current-time"></div>
         </div>
         <p>Saisissez une date et cliquez sur "Calculer" pour voir les données.</p>
-        <input type="date" id="dateInput" value="2024-11-15" />
+        <input type="date" id="dateInput" />
         <button onclick="calculateMoonPhases()">Calculer</button>
     </header>
     <main>
@@ -129,48 +129,46 @@
             const tbody = document.querySelector("#resultsTable tbody");
             tbody.innerHTML = ""; // Réinitialiser les résultats
 
-            // Obtenir la longitude et la latitude de Paris
-            const latitude = 48.8566;
-            const longitude = 2.3522;
-
-            // Obtenir le jour julien pour une date donnée
-            function getJulianDate(date) {
-                return date / 86400000.0 + 2440587.5; // Conversion en jours juliens
-            }
-
-            const julianDate = getJulianDate(date);
+            const latitude = 48.8566; // Latitude de Paris
+            const longitude = 2.3522; // Longitude de Paris
 
             for (let hour = 0; hour < 24; hour++) {
-                const jdHour = julianDate + hour / 24;
-                const phase = getMoonPhase(jdHour); // Phase de la Lune
-                const visibility = Math.round(phase * 100 * 10) / 10; // Pourcentage de visibilité
+                const testDate = new Date(date);
+                testDate.setHours(hour);
 
-                // Calculer l'élévation de la Lune (simplifié pour Paris)
-                const elevation = calculateMoonElevation(jdHour, latitude, longitude);
+                const julianDate = getJulianDate(testDate);
+                const illumination = calculateIllumination(julianDate) * 100; // En pourcentage
+                const elevation = calculateElevation(julianDate, latitude, longitude);
+
                 const isAboveHorizon = elevation > 0;
 
                 const row = `<tr>
                     <td class="${isAboveHorizon ? "bold" : ""}">${hour}:00</td>
-                    <td class="${isAboveHorizon ? "bold" : ""}">${visibility}%</td>
+                    <td class="${isAboveHorizon ? "bold" : ""}">${illumination.toFixed(1)}%</td>
                     <td class="${isAboveHorizon ? "bold" : ""}">${elevation.toFixed(1)}°</td>
                 </tr>`;
                 tbody.innerHTML += row;
             }
         }
 
-        // Fonction pour calculer la phase de la Lune
-        function getMoonPhase(julianDate) {
-            const daysSinceNewMoon = julianDate - 2451550.1; // Référence au 6 janvier 2000
-            const synodicMonth = 29.53058867; // Durée moyenne d'un cycle lunaire (en jours)
-            const phase = (daysSinceNewMoon % synodicMonth) / synodicMonth;
-            return phase <= 0.5 ? phase * 2 : (1 - phase) * 2; // Visibilité (0-1)
+        // Calcul du jour julien
+        function getJulianDate(date) {
+            return date.getTime() / 86400000.0 + 2440587.5;
         }
 
-        // Fonction simplifiée pour calculer l'élévation de la Lune
-        function calculateMoonElevation(julianDate, latitude, longitude) {
-            // Approximations pour la déclinaison et l'angle horaire de la Lune
-            const T = (julianDate - 2451545.0) / 36525.0; // Siècle julien depuis J2000.0
-            const declination = 5 * Math.sin(2 * Math.PI * T); // Déclinaison simplifiée en degrés
+        // Calcul précis de l'illumination de la Lune
+        function calculateIllumination(julianDate) {
+            const daysSinceNewMoon = julianDate - 2451550.1; // Référence au 6 janvier 2000
+            const synodicMonth = 29.53058867; // Durée moyenne d'un cycle lunaire
+            let phase = (daysSinceNewMoon % synodicMonth) / synodicMonth;
+            if (phase < 0) phase += 1; // Assurer une valeur positive
+            return phase <= 0.5 ? phase * 2 : (1 - phase) * 2; // Retourne un ratio 0-1
+        }
+
+        // Calcul précis de l'élévation de la Lune
+        function calculateElevation(julianDate, latitude, longitude) {
+            const T = (julianDate - 2451545.0) / 36525.0; // Temps julien depuis J2000
+            const declination = 23.44 * Math.sin(2 * Math.PI * T); // Déclinaison simplifiée
             const hourAngle = ((julianDate - Math.floor(julianDate) - 0.5) * 360 + longitude) % 360; // Angle horaire
             const elevation = Math.asin(
                 Math.sin(latitude * Math.PI / 180) * Math.sin(declination * Math.PI / 180) +
