@@ -7,17 +7,26 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title>PrayerClock Web — V4 PWA</title>
+<title>PrayerClock Web — V5.0 Stable</title>
 <style>
 :root{--bg:#f7f4ee;--card:#fffdf8;--ink:#161616;--blue:#0057ff;--line:#dedbd4;--accent:#3c2864}
 *{box-sizing:border-box}
+html,body{width:100%;max-width:100%;overflow-x:hidden}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,Helvetica,sans-serif}
 .app{max-width:720px;margin:0 auto;padding:18px 18px 34px}
-.top{display:flex;gap:12px;align-items:end;justify-content:space-between;margin-bottom:10px}
+.top{display:flex;gap:12px;align-items:end;justify-content:space-between;margin-bottom:10px;position:relative;z-index:20}
 .brand{font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#555}
 .citybox{min-width:250px}
 .citybox label{display:block;font-size:11px;font-weight:700;color:#666;margin-bottom:4px;text-align:right}
-select{width:100%;border:1px solid #d5d0c7;background:#fff;border-radius:10px;padding:10px 12px;font-weight:700}
+.cityCombo{position:relative;width:100%}
+.cityInput{width:100%;border:1px solid #d5d0c7;background:#fff;border-radius:10px;padding:10px 38px 10px 12px;font-weight:700;font-size:14px;outline:none}
+.cityInput:focus{border-color:#8f887d;box-shadow:0 0 0 2px rgba(143,136,125,.12)}
+.cityDropBtn{position:absolute;right:1px;top:1px;bottom:1px;width:36px;border:0;background:transparent;border-radius:0 9px 9px 0;font-size:13px;cursor:pointer;color:#555}
+.cityOptions{position:absolute;left:0;right:0;top:calc(100% + 4px);max-height:260px;overflow-y:auto;background:#fff;border:1px solid #d5d0c7;border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.14);z-index:1000;padding:4px;display:none}
+.cityOptions.open{display:block}
+.cityOption{padding:9px 10px;border-radius:7px;font-weight:700;font-size:14px;cursor:pointer}
+.cityOption:hover,.cityOption.active{background:#f0ede7}
+.cityEmpty{padding:10px;color:#777;font-size:13px;text-align:center}
 .card{background:var(--card);border:1px solid #e5e1d8;border-radius:20px;padding:18px;box-shadow:0 10px 30px rgba(35,25,15,.05)}
 .clockWrap{display:flex;justify-content:center;padding:6px 0 0}
 canvas{width:min(78vw,410px);height:min(78vw,410px);max-width:410px;max-height:410px}
@@ -34,6 +43,9 @@ h2{text-align:center;font-size:20px;letter-spacing:.03em;margin:0 0 13px}
 .countBox{background:linear-gradient(90deg,#92d84e 0%,#d7de38 48%,#ffbf2c 100%);border-radius:13px;padding:26px 18px;margin:0 auto;max-width:520px}
 .countdown{font-size:38px;font-weight:900;font-variant-numeric:tabular-nums;color:#ff1010;letter-spacing:.02em}
 .audioControls{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+.notifyControls{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+.notifyBtn{border:1px solid #cfc8bb;background:#fff;border-radius:9px;padding:8px 11px;font-weight:800;cursor:pointer}
+.notifyBtn.on{background:#e8f2ff;border-color:#78aef5;color:#174a8b}
 .audioBtn{border:1px solid #cfc8bb;background:#fff;border-radius:9px;padding:8px 11px;font-weight:800;cursor:pointer}
 .audioBtn.on{background:#e9f7e6;border-color:#8cc97f;color:#235d1e}
 .status{font-size:12px;text-align:center;color:#777;margin-top:10px}
@@ -46,6 +58,155 @@ summary{cursor:pointer;font-weight:700;color:#555}
 .advgrid input{width:100%;margin-top:4px;padding:8px;border:1px solid #d5d0c7;border-radius:8px;background:white}
 .legend{font-size:11px;color:#777;margin-top:10px;text-align:center}
 .installBtn{margin-left:8px;border:1px solid #cfc8bb;background:#fff;border-radius:8px;padding:5px 8px;font-size:11px;font-weight:800;cursor:pointer}
+
+.updateBanner{
+  display:none;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin:0 0 10px;
+  padding:10px 12px;
+  border:1px solid #9bbcea;
+  border-radius:11px;
+  background:#eef5ff;
+  color:#173f78;
+  font-size:13px;
+  font-weight:700;
+}
+.updateBanner.show{display:flex}
+.updateBtn{
+  flex:0 0 auto;
+  border:1px solid #6f9edc;
+  background:#fff;
+  color:#174a8b;
+  border-radius:8px;
+  padding:7px 10px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+@media(max-width:899px){
+  .app{
+    width:100%;
+    max-width:100%;
+    padding:8px 8px 18px;
+    overflow-x:hidden;
+  }
+
+  .top{
+    display:grid;
+    grid-template-columns:108px minmax(0,1fr);
+    gap:8px;
+    width:100%;
+    max-width:100%;
+    align-items:end;
+    margin-bottom:8px;
+  }
+
+  .brand{
+    min-width:0;
+    font-size:11px;
+    line-height:1.25;
+    letter-spacing:.10em;
+    overflow-wrap:anywhere;
+  }
+
+  .citybox{
+    min-width:0;
+    width:100%;
+    max-width:100%;
+  }
+
+  .citybox label{
+    font-size:9px;
+    margin:0 2px 3px 0;
+    white-space:nowrap;
+  }
+
+  .cityCombo{
+    width:100%;
+    min-width:0;
+    max-width:100%;
+  }
+
+  .cityInput{
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    font-size:14px;
+    padding:9px 38px 9px 10px;
+  }
+
+  .cityOptions{
+    max-height:42vh;
+  }
+
+  .card,
+  .left,
+  .right,
+  .times,
+  .next,
+  .countBox,
+  .audioControls,
+  details{
+    min-width:0;
+    max-width:100%;
+  }
+
+  .card{
+    width:100%;
+    padding:14px 12px 16px;
+    border-radius:16px;
+  }
+
+  .clockWrap{padding-top:0}
+
+  canvas{
+    width:min(82vw,330px);
+    height:min(82vw,330px);
+  }
+
+  .date{
+    margin-top:0;
+    margin-bottom:10px;
+  }
+
+  .rule{margin:8px 4px 12px}
+
+  h2{font-size:19px}
+
+  .times{
+    column-gap:18px;
+    row-gap:7px;
+  }
+
+  .name{font-size:17px}
+  .time{font-size:19px}
+
+  .next{margin-top:20px}
+  .nextTitle{font-size:19px;margin-bottom:10px}
+
+  .countBox{
+    padding:20px 12px;
+    border-radius:12px;
+  }
+
+  .countdown{font-size:34px}
+
+  .audioControls{
+    gap:6px;
+    margin-top:12px;
+  }
+
+  .audioBtn{
+    padding:8px 9px;
+    font-size:12px;
+  }
+
+  .status{font-size:11px}
+  .note{font-size:11px}
+}
+
 @media(min-width:900px){
   .app{max-width:1060px}
   .card{display:grid;grid-template-columns:1.05fr .95fr;gap:26px;align-items:center;padding:26px}
@@ -59,11 +220,24 @@ summary{cursor:pointer;font-weight:700;color:#555}
 <body>
 <div class="app">
   <div class="top">
-    <div class="brand">PrayerClock Web · V4 <button id="installBtn" class="installBtn" hidden>Installer</button></div>
+    <div class="brand">PrayerClock Web · V5.0 <button id="installBtn" class="installBtn" hidden>Installer</button></div>
     <div class="citybox">
       <label for="citySelect">VILLE</label>
-      <select id="citySelect"></select>
+      <div class="cityCombo" id="cityCombo">
+        <input id="citySelect" class="cityInput" type="text"
+               autocomplete="off" autocapitalize="none" spellcheck="false"
+               aria-autocomplete="list" aria-controls="cityOptions"
+               aria-expanded="false" placeholder="Choisir ou rechercher une ville">
+        <button id="cityDropBtn" class="cityDropBtn" type="button"
+                aria-label="Afficher les villes">▼</button>
+        <div id="cityOptions" class="cityOptions" role="listbox"></div>
+      </div>
     </div>
+  </div>
+
+  <div id="updateBanner" class="updateBanner">
+    <span id="updateText">Nouvelle version disponible.</span>
+    <button id="updateBtn" class="updateBtn" type="button">Mettre à jour</button>
   </div>
 
   <div class="card">
@@ -97,6 +271,12 @@ summary{cursor:pointer;font-weight:700;color:#555}
         <button id="adhanTest" class="audioBtn">Tester</button>
         <button id="adhanStop" class="audioBtn">Arrêter</button>
       </div>
+
+      <div class="notifyControls">
+        <button id="notifyToggle" class="notifyBtn">🔔 Activer les notifications</button>
+      </div>
+      <div id="notifyStatus" style="text-align:center;font-size:12px;margin-top:6px;color:#6b655d"></div>
+
       <audio id="adhanAudio" preload="auto" src="./adhan.mp3"></audio>
       <div class="status" id="status">Calcul astronomique local</div>
 
@@ -123,82 +303,240 @@ summary{cursor:pointer;font-weight:700;color:#555}
 </div>
 
 <script src="./suncalc-lite.js"></script>
+<script src="./cities.js"></script>
 <script>
-const CITIES = [
-  {name:"Aix-en-Provence",lat:43.5297,lon:5.4474,tz:"Europe/Paris"},
-  {name:"Amiens",lat:49.8941,lon:2.2958,tz:"Europe/Paris"},
-  {name:"Angers",lat:47.4784,lon:-0.5632,tz:"Europe/Paris"},
-  {name:"Annecy",lat:45.8992,lon:6.1294,tz:"Europe/Paris"},
-  {name:"Argenteuil",lat:48.9472,lon:2.2467,tz:"Europe/Paris"},
-  {name:"Aulnay-sous-Bois",lat:48.9385,lon:2.4907,tz:"Europe/Paris"},
-  {name:"Avignon",lat:43.9493,lon:4.8055,tz:"Europe/Paris"},
-  {name:"Besançon",lat:47.2378,lon:6.0241,tz:"Europe/Paris"},
-  {name:"Bordeaux",lat:44.8378,lon:-0.5792,tz:"Europe/Paris"},
-  {name:"Brest",lat:48.3904,lon:-4.4861,tz:"Europe/Paris"},
-  {name:"Bruxelles",lat:50.8503,lon:4.3517,tz:"Europe/Brussels"},
-  {name:"Caen",lat:49.1829,lon:-0.3707,tz:"Europe/Paris"},
-  {name:"Cannes",lat:43.5528,lon:7.0174,tz:"Europe/Paris"},
-  {name:"Chambéry",lat:45.5646,lon:5.9178,tz:"Europe/Paris"},
-  {name:"Clermont-Ferrand",lat:45.7772,lon:3.087,tz:"Europe/Paris"},
-  {name:"Créteil",lat:48.7904,lon:2.4556,tz:"Europe/Paris"},
-  {name:"Dijon",lat:47.322,lon:5.0415,tz:"Europe/Paris"},
-  {name:"Dunkerque",lat:51.0344,lon:2.3768,tz:"Europe/Paris"},
-  {name:"Evere — Chaussée de Louvain 1028",lat:50.8603896,lon:4.4207985,tz:"Europe/Brussels"},
-  {name:"Grenoble",lat:45.1885,lon:5.7245,tz:"Europe/Paris"},
-  {name:"La Rochelle",lat:46.1603,lon:-1.1511,tz:"Europe/Paris"},
-  {name:"Le Havre",lat:49.4944,lon:0.1079,tz:"Europe/Paris"},
-  {name:"Lille",lat:50.6292,lon:3.0573,tz:"Europe/Paris"},
-  {name:"Limoges",lat:45.8336,lon:1.2611,tz:"Europe/Paris"},
-  {name:"Lyon",lat:45.764,lon:4.8357,tz:"Europe/Paris"},
-  {name:"Marseille",lat:43.2965,lon:5.3698,tz:"Europe/Paris"},
-  {name:"Metz",lat:49.1193,lon:6.1757,tz:"Europe/Paris"},
-  {name:"Montpellier",lat:43.6108,lon:3.8767,tz:"Europe/Paris"},
-  {name:"Montreuil",lat:48.8638,lon:2.4485,tz:"Europe/Paris"},
-  {name:"Mulhouse",lat:47.7508,lon:7.3359,tz:"Europe/Paris"},
-  {name:"Nancy",lat:48.6921,lon:6.1844,tz:"Europe/Paris"},
-  {name:"Nanterre",lat:48.8924,lon:2.2067,tz:"Europe/Paris"},
-  {name:"Nantes",lat:47.2184,lon:-1.5536,tz:"Europe/Paris"},
-  {name:"Nice",lat:43.7102,lon:7.262,tz:"Europe/Paris"},
-  {name:"Nîmes",lat:43.8367,lon:4.3601,tz:"Europe/Paris"},
-  {name:"Orléans",lat:47.903,lon:1.9093,tz:"Europe/Paris"},
-  {name:"Paris",lat:48.8566,lon:2.3522,tz:"Europe/Paris"},
-  {name:"Pau",lat:43.2951,lon:-0.3708,tz:"Europe/Paris"},
-  {name:"Perpignan",lat:42.6887,lon:2.8948,tz:"Europe/Paris"},
-  {name:"Poitiers",lat:46.5802,lon:0.3404,tz:"Europe/Paris"},
-  {name:"Reims",lat:49.2583,lon:4.0317,tz:"Europe/Paris"},
-  {name:"Rennes",lat:48.1173,lon:-1.6778,tz:"Europe/Paris"},
-  {name:"Roubaix",lat:50.6927,lon:3.1746,tz:"Europe/Paris"},
-  {name:"Rouen",lat:49.4431,lon:1.0993,tz:"Europe/Paris"},
-  {name:"Saint-Denis (93)",lat:48.9362,lon:2.3574,tz:"Europe/Paris"},
-  {name:"Saint-Étienne",lat:45.4397,lon:4.3872,tz:"Europe/Paris"},
-  {name:"Strasbourg",lat:48.5734,lon:7.7521,tz:"Europe/Paris"},
-  {name:"Toulon",lat:43.1242,lon:5.928,tz:"Europe/Paris"},
-  {name:"Toulouse",lat:43.6047,lon:1.4442,tz:"Europe/Paris"},
-  {name:"Tourcoing",lat:50.7249,lon:3.1612,tz:"Europe/Paris"},
-  {name:"Tours",lat:47.3941,lon:0.6848,tz:"Europe/Paris"},
-  {name:"Versailles",lat:48.8049,lon:2.1204,tz:"Europe/Paris"},
-  {name:"Villeurbanne",lat:45.7719,lon:4.8902,tz:"Europe/Paris"}
-];
+const CITIES = window.PRAYERCLOCK_CITIES || [];
 
 const $=id=>document.getElementById(id);
-const citySelect=$("citySelect"),lat=$("lat"),lon=$("lon"),tz=$("tz");
-const imsakAngle=$("imsakAngle"),fajrAngle=$("fajrAngle"),maghribAngle=$("maghribAngle"),ishaAngle=$("ishaAngle"),asrCoef=$("asrCoef");
 
-CITIES.forEach(c=>{
-  const o=document.createElement("option");
-  o.value=c.name;o.textContent=c.name;
-  citySelect.appendChild(o);
+const APP_VERSION = "5.0";
+const updateBanner = $("updateBanner");
+const updateText = $("updateText");
+const updateBtn = $("updateBtn");
+
+async function checkPrayerClockUpdate(){
+  if(!navigator.onLine) return;
+
+  try{
+    const response = await fetch(
+      "./version.json?t=" + Date.now(),
+      {cache:"no-store"}
+    );
+
+    if(!response.ok) return;
+
+    const info = await response.json();
+
+    if(info.version && info.version !== APP_VERSION){
+      updateText.textContent =
+        `Nouvelle version disponible (${info.version}).`;
+      updateBanner.classList.add("show");
+    }
+  }catch(e){
+    // Hors ligne ou GitHub momentanément indisponible :
+    // PrayerClock continue simplement avec la version locale.
+  }
+}
+
+updateBtn.addEventListener("click", async ()=>{
+  updateBtn.disabled = true;
+  updateBtn.textContent = "Mise à jour…";
+
+  try{
+    const reg = await navigator.serviceWorker.getRegistration("./");
+
+    if(reg){
+      let reloading = false;
+
+      navigator.serviceWorker.addEventListener(
+        "controllerchange",
+        ()=>{
+          if(reloading) return;
+          reloading = true;
+          location.reload();
+        },
+        {once:true}
+      );
+
+      await reg.update();
+
+      if(reg.waiting){
+        reg.waiting.postMessage({type:"SKIP_WAITING"});
+      }
+
+      // Secours si le navigateur ne déclenche pas controllerchange.
+      setTimeout(()=>location.reload(),2500);
+    }else{
+      location.reload();
+    }
+  }catch(e){
+    updateBtn.disabled = false;
+    updateBtn.textContent = "Réessayer";
+  }
 });
 
-function findCity(name){return CITIES.find(c=>c.name===name)}
+window.addEventListener("online", checkPrayerClockUpdate);
+setTimeout(checkPrayerClockUpdate, 1800);
+
+const citySelect=$("citySelect"),cityCombo=$("cityCombo"),cityDropBtn=$("cityDropBtn"),cityOptions=$("cityOptions");
+const lat=$("lat"),lon=$("lon"),tz=$("tz");
+const imsakAngle=$("imsakAngle"),fajrAngle=$("fajrAngle"),maghribAngle=$("maghribAngle"),ishaAngle=$("ishaAngle"),asrCoef=$("asrCoef");
+
+let currentCity=null;
+let visibleCities=[];
+let activeCityIndex=-1;
+
+function normalizeCityText(text){
+  return String(text||"")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .toLowerCase()
+    .trim();
+}
+
+function findCity(name){
+  const n=normalizeCityText(name);
+  return CITIES.find(c=>normalizeCityText(c.name)===n);
+}
+
+function filteredCities(query){
+  const q=normalizeCityText(query);
+  if(!q)return [...CITIES];
+
+  const starts=[];
+  const contains=[];
+  for(const c of CITIES){
+    const n=normalizeCityText(c.name);
+    if(n.startsWith(q))starts.push(c);
+    else if(n.includes(q))contains.push(c);
+  }
+  return [...starts,...contains];
+}
+
+function renderCityOptions(query=""){
+  visibleCities=filteredCities(query);
+  activeCityIndex=-1;
+  cityOptions.innerHTML="";
+
+  if(!visibleCities.length){
+    const empty=document.createElement("div");
+    empty.className="cityEmpty";
+    empty.textContent="Aucune ville trouvée";
+    cityOptions.appendChild(empty);
+    return;
+  }
+
+  visibleCities.forEach((c,index)=>{
+    const item=document.createElement("div");
+    item.className="cityOption";
+    item.role="option";
+    item.textContent=c.name;
+    item.dataset.index=String(index);
+
+    item.addEventListener("pointerdown",event=>{
+      event.preventDefault();
+      chooseCity(c);
+    });
+
+    cityOptions.appendChild(item);
+  });
+}
+
+function openCityOptions(showAll=false){
+  renderCityOptions(showAll ? "" : citySelect.value);
+  cityOptions.classList.add("open");
+  citySelect.setAttribute("aria-expanded","true");
+}
+
+function closeCityOptions(){
+  cityOptions.classList.remove("open");
+  citySelect.setAttribute("aria-expanded","false");
+  activeCityIndex=-1;
+}
+
+function highlightCity(index){
+  if(!visibleCities.length)return;
+  activeCityIndex=Math.max(0,Math.min(index,visibleCities.length-1));
+  [...cityOptions.querySelectorAll(".cityOption")].forEach((el,i)=>{
+    el.classList.toggle("active",i===activeCityIndex);
+    if(i===activeCityIndex)el.scrollIntoView({block:"nearest"});
+  });
+}
+
 function useCity(c){
   if(!c)return;
+  currentCity=c;
   citySelect.value=c.name;
-  lat.value=c.lat;lon.value=c.lon;tz.value=c.tz;
+  lat.value=c.lat;
+  lon.value=c.lon;
+  tz.value=c.tz;
   localStorage.setItem("prayerclock.city",c.name);
   calculate();
+
+  if(localStorage.getItem("prayerclock.subscriberId")){
+    setTimeout(()=>{
+      syncExistingPushRegistration().catch(err=>{
+        console.warn("Synchronisation Push différée :", err);
+      });
+    },0);
+  }
 }
-citySelect.addEventListener("change",()=>useCity(findCity(citySelect.value)));
+
+function chooseCity(c){
+  useCity(c);
+  closeCityOptions();
+  citySelect.blur();
+}
+
+citySelect.addEventListener("focus",()=>openCityOptions(true));
+
+citySelect.addEventListener("input",()=>{
+  openCityOptions(false);
+});
+
+citySelect.addEventListener("keydown",event=>{
+  if(event.key==="ArrowDown"){
+    event.preventDefault();
+    if(!cityOptions.classList.contains("open"))openCityOptions(false);
+    highlightCity(activeCityIndex+1);
+  }else if(event.key==="ArrowUp"){
+    event.preventDefault();
+    if(!cityOptions.classList.contains("open"))openCityOptions(false);
+    highlightCity(activeCityIndex<=0 ? visibleCities.length-1 : activeCityIndex-1);
+  }else if(event.key==="Enter"){
+    if(cityOptions.classList.contains("open") && visibleCities.length){
+      event.preventDefault();
+      chooseCity(visibleCities[activeCityIndex>=0 ? activeCityIndex : 0]);
+    }
+  }else if(event.key==="Escape"){
+    closeCityOptions();
+    if(currentCity)citySelect.value=currentCity.name;
+    citySelect.blur();
+  }
+});
+
+cityDropBtn.addEventListener("click",()=>{
+  if(cityOptions.classList.contains("open")){
+    closeCityOptions();
+  }else{
+    citySelect.focus();
+    openCityOptions(true);
+  }
+});
+
+citySelect.addEventListener("blur",()=>{
+  setTimeout(()=>{
+    if(cityOptions.classList.contains("open"))return;
+    const exact=findCity(citySelect.value);
+    if(exact && (!currentCity || exact.name!==currentCity.name))useCity(exact);
+    else if(currentCity)citySelect.value=currentCity.name;
+  },80);
+});
+
+document.addEventListener("pointerdown",event=>{
+  if(!cityCombo.contains(event.target))closeCityOptions();
+});
+
 [lat,lon,tz,imsakAngle,fajrAngle,maghribAngle,ishaAngle,asrCoef].forEach(el=>el.addEventListener("change",calculate));
 
 function zoneParts(date,zone){
@@ -210,39 +548,72 @@ function formatHM(date,zone){if(!date)return "N/A";return new Intl.DateTimeForma
 function formatDate(date,zone){return new Intl.DateTimeFormat("fr-FR",{timeZone:zone,weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(date)}
 function altitude(date,la,lo){return SunCalc.getPosition(date,la,lo).altitude*180/Math.PI}
 
-function findCrossing(y,m,d,la,lo,target,phase){
-  const base=Date.UTC(y,m-1,d,12,0,0);
-  let start=base-18*3600000,end=base+18*3600000;
-  let pt=start,pv=altitude(new Date(pt),la,lo)-target;
-  const brackets=[];
-  for(let t=start+5*60000;t<=end;t+=5*60000){
-    const v=altitude(new Date(t),la,lo)-target;
-    if(pv===0||v===0||pv*v<0){
-      const rising=v>pv;
-      if((phase==="morning"&&rising)||(phase==="evening"&&!rising))brackets.push([pt,t]);
-    }
-    pt=t;pv=v;
-  }
-  if(!brackets.length)return null;
-  let [a,b]=brackets[0];
-  for(let i=0;i<32;i++){
-    const mid=(a+b)/2,va=altitude(new Date(a),la,lo)-target,vm=altitude(new Date(mid),la,lo)-target;
-    if(va*vm<=0)b=mid;else a=mid;
-  }
-  return new Date((a+b)/2);
+function sameLocalDay(date,y,m,d,zone){
+  const p=zoneParts(date,zone);
+  return +p.year===y && +p.month===m && +p.day===d;
 }
 
-function getDay(y,m,d,la,lo){
+function findCrossing(y,m,d,la,lo,target,phase,zone){
+  // Recherche volontairement large pour fonctionner même si, plus tard,
+  // PrayerClock contient des villes dans d'autres fuseaux horaires.
+  const utcDay=Date.UTC(y,m-1,d,0,0,0);
+  const start=utcDay-18*3600000;
+  const end=utcDay+42*3600000;
+
+  let pt=start;
+  let pv=altitude(new Date(pt),la,lo)-target;
+  const brackets=[];
+
+  for(let t=start+5*60000;t<=end;t+=5*60000){
+    const v=altitude(new Date(t),la,lo)-target;
+
+    if(pv===0 || v===0 || pv*v<0){
+      const rising=v>pv;
+      if((phase==="morning"&&rising)||(phase==="evening"&&!rising)){
+        brackets.push([pt,t]);
+      }
+    }
+
+    pt=t;
+    pv=v;
+  }
+
+  for(const pair of brackets){
+    let [a,b]=pair;
+
+    for(let i=0;i<32;i++){
+      const mid=(a+b)/2;
+      const va=altitude(new Date(a),la,lo)-target;
+      const vm=altitude(new Date(mid),la,lo)-target;
+      if(va*vm<=0)b=mid;
+      else a=mid;
+    }
+
+    const candidate=new Date((a+b)/2);
+
+    // Point important : on ne garde que le croisement appartenant
+    // réellement à la date locale demandée.
+    if(sameLocalDay(candidate,y,m,d,zone)){
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+function getDay(y,m,d,la,lo,zone){
   const st=SunCalc.getTimes(new Date(Date.UTC(y,m-1,d,12)),la,lo);
-  const imsak=findCrossing(y,m,d,la,lo,+imsakAngle.value,"morning");
-  const fajr=findCrossing(y,m,d,la,lo,+fajrAngle.value,"morning");
-  const maghrib=findCrossing(y,m,d,la,lo,+maghribAngle.value,"evening");
-  const isha=findCrossing(y,m,d,la,lo,+ishaAngle.value,"evening");
+  const imsak=findCrossing(y,m,d,la,lo,+imsakAngle.value,"morning",zone);
+  const fajr=findCrossing(y,m,d,la,lo,+fajrAngle.value,"morning",zone);
+  const maghrib=findCrossing(y,m,d,la,lo,+maghribAngle.value,"evening",zone);
+  const isha=findCrossing(y,m,d,la,lo,+ishaAngle.value,"evening",zone);
+
   let asr=null;
   if(st.sunset&&st.solarNoon){
     const interval=st.sunset.getTime()-st.solarNoon.getTime();
     asr=new Date(st.sunset.getTime()-interval*(+asrCoef.value));
   }
+
   return {imsak,fajr,sunrise:st.sunrise,dhuhr:st.solarNoon,asr,sunset:st.sunset,maghrib,isha};
 }
 
@@ -250,16 +621,16 @@ let todayData=null,tomorrowData=null;
 function calculate(){
   if(typeof SunCalc==="undefined"){$("status").textContent="SunCalc indisponible.";return}
   const la=+lat.value,lo=+lon.value,zone=tz.value.trim(),q=localYMD(zone);
-  todayData=getDay(q.y,q.m,q.d,la,lo);
+  todayData=getDay(q.y,q.m,q.d,la,lo,zone);
   const nd=new Date(Date.UTC(q.y,q.m-1,q.d)+86400000);
-  tomorrowData=getDay(nd.getUTCFullYear(),nd.getUTCMonth()+1,nd.getUTCDate(),la,lo);
+  tomorrowData=getDay(nd.getUTCFullYear(),nd.getUTCMonth()+1,nd.getUTCDate(),la,lo,zone);
   todayData.midnight=(todayData.sunset&&tomorrowData.fajr)?new Date(todayData.sunset.getTime()+(tomorrowData.fajr.getTime()-todayData.sunset.getTime())/2):null;
 
   [["imsak","imsak"],["fajr","fajr"],["sunrise","sunrise"],["dhuhr","dhuhr"],["asr","asr"],["sunset","sunset"],["maghrib","maghrib"],["isha","isha"],["midnight","midnight"]]
     .forEach(([id,key])=>$(id).textContent=formatHM(todayData[key],zone));
 
   $("dateLabel").textContent=formatDate(new Date(),zone);
-  $("status").textContent=`${citySelect.value} · ${zone}`;
+  $("status").textContent=`${currentCity ? currentCity.name : citySelect.value} · ${zone}`;
   updateNext();
 }
 
@@ -396,6 +767,234 @@ async function checkAdhan(){
 }
 
 refreshAdhanButton();
+
+// ============================================================
+// NOTIFICATIONS PUSH — VERSION STABLE
+// ============================================================
+const PUSH_SERVER = "https://prayerclock-notifications.tramoudian1963.workers.dev";
+
+const notifyToggle = $("notifyToggle");
+const notifyStatus = $("notifyStatus");
+
+function setNotifyStatus(text){
+  notifyStatus.textContent = text || "";
+}
+
+function urlBase64ToUint8Array(base64String){
+  const padding = "=".repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/-/g, "+")
+    .replace(/_/g, "/");
+
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map(ch => ch.charCodeAt(0)));
+}
+
+async function ensurePrayerClockWorker(){
+  if(!("serviceWorker" in navigator)){
+    throw new Error("Service worker non pris en charge.");
+  }
+
+  let reg = await navigator.serviceWorker.getRegistration("./");
+
+  if(!reg){
+    reg = await navigator.serviceWorker.register("./service-worker.js", {scope:"./"});
+  }
+
+  reg = await navigator.serviceWorker.ready;
+
+  if(reg.waiting){
+    reg.waiting.postMessage({type:"SKIP_WAITING"});
+  }
+
+  return reg;
+}
+
+async function savePushContextToWorker(subscriberId){
+  if(!subscriberId) return;
+
+  const reg = await ensurePrayerClockWorker();
+  const worker = navigator.serviceWorker.controller || reg.active;
+
+  if(worker){
+    worker.postMessage({
+      type: "SAVE_PUSH_CONTEXT",
+      subscriberId
+    });
+  }
+}
+
+async function syncExistingPushRegistration(){
+  const subscriberId = localStorage.getItem("prayerclock.subscriberId");
+
+  if(
+    !subscriberId ||
+    Notification.permission !== "granted" ||
+    !("PushManager" in window)
+  ){
+    return;
+  }
+
+  const reg = await ensurePrayerClockWorker();
+  const subscription = await reg.pushManager.getSubscription();
+
+  if(!subscription) return;
+
+  const city = currentCity ? currentCity.name : citySelect.value;
+
+  const response = await fetch(PUSH_SERVER + "/subscribe", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      subscription: subscription.toJSON(),
+      city,
+      latitude: Number(lat.value),
+      longitude: Number(lon.value),
+      timezone: tz.value
+    })
+  });
+
+  const result = await response.json();
+
+  if(response.ok && result.ok && result.subscriberId){
+    localStorage.setItem("prayerclock.subscriberId", result.subscriberId);
+    await savePushContextToWorker(result.subscriberId);
+  }
+}
+
+function refreshNotifyButton(){
+  if(!("Notification" in window) || !("PushManager" in window)){
+    notifyToggle.textContent = "Notifications push non prises en charge";
+    notifyToggle.disabled = true;
+    setNotifyStatus("Push non pris en charge sur ce navigateur.");
+    return;
+  }
+
+  const subscriberId = localStorage.getItem("prayerclock.subscriberId");
+
+  if(Notification.permission === "granted" && subscriberId){
+    notifyToggle.textContent = "🔔 Notifications serveur activées";
+    notifyToggle.classList.add("on");
+    setNotifyStatus("Téléphone enregistré sur le serveur PrayerClock.");
+  }else if(Notification.permission === "granted"){
+    notifyToggle.textContent = "🔔 Enregistrer ce téléphone";
+    notifyToggle.classList.remove("on");
+    setNotifyStatus("Autorisation Android accordée. Téléphone non encore enregistré.");
+  }else if(Notification.permission === "denied"){
+    notifyToggle.textContent = "🔕 Notifications bloquées";
+    notifyToggle.classList.remove("on");
+    setNotifyStatus("Autorisation bloquée dans Android/Chrome.");
+  }else{
+    notifyToggle.textContent = "🔔 Activer les notifications";
+    notifyToggle.classList.remove("on");
+    setNotifyStatus("");
+  }
+}
+
+async function registerPhoneForPush(){
+  if(!("Notification" in window) || !("PushManager" in window)){
+    throw new Error("Notifications Push non prises en charge.");
+  }
+
+  const permission = await Notification.requestPermission();
+
+  if(permission !== "granted"){
+    throw new Error("Autorisation de notification non accordée.");
+  }
+
+  setNotifyStatus("Connexion au serveur PrayerClock...");
+
+  const reg = await ensurePrayerClockWorker();
+
+  const keyResponse = await fetch(PUSH_SERVER + "/vapid-public-key", {
+    cache: "no-store"
+  });
+
+  if(!keyResponse.ok){
+    throw new Error("Impossible de récupérer la clé Push.");
+  }
+
+  const keyData = await keyResponse.json();
+
+  if(!keyData.ok || !keyData.publicKey){
+    throw new Error("Clé Push invalide.");
+  }
+
+  let subscription = await reg.pushManager.getSubscription();
+
+  // Si la clé VAPID du serveur a changé, l'ancien abonnement Push
+  // n'est plus valable pour PrayerClock : on le recrée proprement.
+  const savedVapidKey = localStorage.getItem("prayerclock.vapidPublicKey");
+
+  if(subscription && savedVapidKey !== keyData.publicKey){
+    try{
+      await subscription.unsubscribe();
+    }catch(e){
+      console.warn("Impossible de désabonner l'ancienne souscription :", e);
+    }
+    subscription = null;
+    localStorage.removeItem("prayerclock.subscriberId");
+  }
+
+  if(!subscription){
+    subscription = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(keyData.publicKey)
+    });
+  }
+
+  localStorage.setItem("prayerclock.vapidPublicKey", keyData.publicKey);
+
+  const city = currentCity ? currentCity.name : citySelect.value;
+
+  const response = await fetch(PUSH_SERVER + "/subscribe", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      subscription: subscription.toJSON(),
+      city,
+      latitude: Number(lat.value),
+      longitude: Number(lon.value),
+      timezone: tz.value
+    })
+  });
+
+  const result = await response.json();
+
+  if(!response.ok || !result.ok || !result.subscriberId){
+    throw new Error(result.error || "Enregistrement du téléphone impossible.");
+  }
+
+  localStorage.setItem("prayerclock.subscriberId", result.subscriberId);
+  await savePushContextToWorker(result.subscriberId);
+
+  setNotifyStatus(`Téléphone enregistré pour ${city}.`);
+  refreshNotifyButton();
+
+  return result.subscriberId;
+}
+
+notifyToggle.addEventListener("click", async ()=>{
+  try{
+    await registerPhoneForPush();
+  }catch(e){
+    console.warn("Erreur abonnement Push :", e);
+    setNotifyStatus("Échec : " + e.message);
+  }
+});
+
+
+refreshNotifyButton();
+
+setTimeout(()=>{
+  syncExistingPushRegistration().catch(err=>{
+    console.warn("Synchronisation Push au démarrage :", err);
+  });
+},1500);
 
 const saved=findCity(localStorage.getItem("prayerclock.city"));
 useCity(saved||findCity("Paris"));
